@@ -36,7 +36,7 @@ Benchmark-CTCM-ST
 * Genes X Cell (dgCMatrix)
 ## 2. Spatial location information
 A .tsv file containing 3 columns:
-* index
+* cell index
 * X0: x-coordinate pixel-mapped values
 * X1: y-coordinate pixel-mapped values
 
