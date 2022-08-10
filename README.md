@@ -33,7 +33,8 @@ Benchmark-CTCM-ST
 ```
 
 ## 1.  Simulated counts
-* Genes X Cell (dgCMatrix)
+A .rds file containing:
+* Genes X Cell matrix (dgCMatrix)
 ## 2. Spatial location information
 A .tsv file containing 3 columns:
 * cell index
