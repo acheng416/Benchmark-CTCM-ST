@@ -12,19 +12,15 @@ Benchmark-CTCM-ST
 │       │   ...
 │   └───images_sd5/
 │       │  rgb_img1.png
-│       │  rgb_img2.png
 │       │   ...
 │   └───images_sd10/
 │       │  rgb_img1.png
-│       │  rgb_img2.png
 │       │   ...
 │   └───images_sd25/
 │       │  rgb_img1.png
-│       │  rgb_img2.png
 │       │   ...
 │   └───images_sd50/
 │       │  rgb_img1.png
-│       │  rgb_img2.png
 │       │   ...
 │   └───simcounts/
 │       │   Dataset1_counts1.rds #Simulated counts for replicate 1
