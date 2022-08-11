@@ -30,6 +30,10 @@ Benchmark-CTCM-ST
 │       │   spatial_trans1.tsv #Pixel-mapped spatial coordinates
 │       │   spatial_trans2.tsv
 │       │   ...
+│   └───true_cl/
+│       │   Dataset1_true_cl1.rds #Cell types assigned through RShiny
+│       │   Dataset1_true_cl2.rds
+│       │   ...
 ```
 
 ## 1.  Simulated counts
@@ -41,6 +45,6 @@ A .tsv file containing 3 columns:
 * X0: x-coordinate pixel-mapped values
 * X1: y-coordinate pixel-mapped values
 
-
 ## 3. Simulated histology images
 A .png image with shape (288, 288, 3) generated with a standard deviations of 0.5, 5, 10, 25, and 50.
+## 4. true_cl: Ground truth cell types assigned through RShiny
