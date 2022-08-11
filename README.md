@@ -48,3 +48,4 @@ A .tsv file containing 3 columns:
 ## 3. Simulated histology images
 A .png image with shape (288, 288, 3) generated with a standard deviations of 0.5, 5, 10, 25, and 50.
 ## 4. true_cl: Ground truth cell types assigned through RShiny
+* Factor with k levels, where k is the number of unique cell types assigned.
