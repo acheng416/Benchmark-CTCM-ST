@@ -1,5 +1,5 @@
 # Benchmark-CTCM-ST
-Datasets for "Benchmarking cell-type clustering methods for spatially resolved transcriptomics data"
+Datasets for [Benchmarking cell-type clustering methods for spatially resolved transcriptomics data](https://doi.org/10.1093/bib/bbac475).
 
 ## 0. Sample folder structure
 ```
