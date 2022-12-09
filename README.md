@@ -1,6 +1,19 @@
 # Benchmark-CTCM-ST
 Datasets for our new paper: "Benchmarking cell-type clustering methods for spatially resolved transcriptomics data" [https://doi.org/10.1093/bib/bbac475](https://doi.org/10.1093/bib/bbac475).
 
+If you find this repo useful please cite:
+```
+@article{10.1093/bib/bbac475,
+    author = {Cheng, Andrew and Hu, Guanyu and Li, Wei Vivian},
+    title = "{Benchmarking cell-type clustering methods for spatially resolved transcriptomics data}",
+    journal = {Briefings in Bioinformatics},
+    year = {2022},
+    month = {11},
+    issn = {1477-4054},
+    doi = {10.1093/bib/bbac475}
+}
+```
+
 ## 0. Sample folder structure
 ```
 Benchmark-CTCM-ST
