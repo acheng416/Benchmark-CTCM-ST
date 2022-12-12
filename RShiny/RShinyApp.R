@@ -5,39 +5,102 @@ library(shinyFiles)
 library(hash)
 library(RColorBrewer)
 library(stringr)
-#library("docstring")
-#library("config")
 
-#Use UI from front-end.R
-source(file.path(getwd(),"Rshiny", "front-end.R"))
+# Use UI from front-end.R
+source(file.path(getwd(),"Rshiny", "frontend.R"))
+# Get preprocessing funcs from backend
+source(file.path(getwd(),"Rshiny", "backend.R"))
 
 server <- function(session, input, output) {
-  #options(shiny.maxRequestSize=1000*1024^2)
-  vals = reactiveValues( 
-                        cluster_index = 0
-                        # to_plot_zp = NULL, select_cluster = NULL, 
-                        # , save_path = NULL, selected = c(),  
-                        # , use_click = FALSE , start_hover = FALSE, trueDataset = NULL, jobQ = NULL
+  vals <- shiny::reactiveValues( 
+                        cluster_index = 0,
+                        cls = NULL,
+                        spatial_df = NULL,
+                        selected_pts = NULL,
+                        save_path = NULL
                         )
-  
-  cluster_index = reactive({
+  cluster = reactive({
     #' Sets cluster_index as cluster selected by User
-    as.numeric(input$cl_choice) 
+    input$cl_choice
   })
-  
-  # observeEvent(input$add_cl,{
-  #   unique_cl = unique(vals$to_plot_zp[,3])
-  #   #print(unique_cl)
-  #   ncls = length(unique_cl)
-  #   new_unique = c( as.character(unique_cl), as.character(ncls) )
-  #   #print(new_unique)
-  #   #print(sort(new_unique[new_unique!="Unassigned"]))
-  #   vals$to_plot_zp[,3] = factor(vals$to_plot_zp[,3] , levels = c("Unassigned",sort(new_unique[new_unique!="Unassigned"]))  )
-  #   vals$select_cluster <- levels(vals$to_plot_zp[,3])
-  #   updateSelectInput(session, "cl_choice",
-  #                     choices = vals$select_cluster, selected = "")
+
+  # observeEvent(input$cl_choice, {
+  #   #' Callback to load clusters from a file given by User
+  #   cl_path = input$cl_file$datapath
+  #   cls = readRDS(cl_path)
+  #   vals$cls = process_cl(cls)
   # })
+
+  observeEvent(input$cl_file, {
+    #' Callback to load clusters from a file given by User
+    cl_path = input$cl_file$datapath
+    cls = readRDS(cl_path)
+    vals$cls = process_cl(cls)
+    choices = sort(vals$cls, decreasing=F)
+    updateSelectInput(session, "cl_choice", choices = choices , selected = choices[1])
+  })
+
+  observeEvent(input$spatial_file, {
+    #' Callback to load spatial information from a file given by User
+    spatial_path = input$spatial_file$datapath
+    vals$spatial_df = handle_filetype(spatial_path)
+  })
+
+  data = reactive({
+    if(!is.null(vals$spatial_df)){
+      spatial_info = vals$spatial_df
+      data = data.frame(x=spatial_info$x, y=spatial_info$y, color=vals$cls)
+      fig = plot_ly(type="scatter",mode="markers",data = data, x = ~x, y = ~y, color = ~color, size=5)
+    } else{fig=NULL}
+    return(fig)
+  })
+
+  output$distPlot <- renderPlotly({
+      return(data())
+  })
+
+  output$selected <- renderPrint({
+    vals$selected_pts = data.frame(event_data("plotly_selected"))
+    print(vals$selected_pts)
+  })
+
+  observeEvent(input$paint_selected, {
+    selected_df = vals$selected_pts[,3:4]
+    spatial_info = vals$spatial_df
+    matched = match(
+      interaction(selected_df$x, selected_df$y),
+      interaction(spatial_info$x, spatial_info$y)
+    );
+    print(vals$cls)
+    
+    vals$cls[matched] = cluster()
+    print(vals$cls)
+    print(cluster())
+  })
+
+  observeEvent(input$add_cl, {
+    old_levels = c(levels(vals$cls))
+    print(length(old_levels))
+    new_cl = as.character(as.numeric(length(old_levels))+1)
+    print(new_cl)
+    choices = sort(c(old_levels,  new_cl), decreasing = F)
+    print(choices)
+    vals$cls = factor(vals$cls, levels=choices)
+    #print(vals$cls)
+    updateSelectInput(session, "cl_choice", choices = choices , selected = choices[1])
+  })
+
   
+  # observe({
+  #   shinyDirChoose(input, "save", roots=c(folder=getwd()), session=session)
+  #   vals$save_path <- parseSavePath(c(folder=getwd()), input$save)$datapath
+  # })
+
+  observe({
+    shinyFileSave(input, "save_file", roots=c(folder=getwd()), session=session)
+    vals$save_path <- parseSavePath(c(folder=getwd()), input$save_file)$datapath
+    print(vals$save_file)
+  })
   # observeEvent(input$delete_cl,{
   #   #Remove selected cluster
   #   if((cluster_index() - 1) > 0 ){
@@ -55,99 +118,6 @@ server <- function(session, input, output) {
   #   }
   # })
   
-  # observeEvent(input$file, {
-  #   vals$save_path <- input$file$datapath
-  #   trueDataset = readRDS(input$file$datapath)
-  #   #View(trueDataset)
-  #   spatial = spatial(trueDataset)
-  #   print(spatial)
-  #   #print(head(spatial, 10))
-  #   print(trueDataset@clusters)
-  #   cl = trueDataset@clusters[['true_cl']]
-  #   print(cl)
-  #   vals$trueDataset = trueDataset
-    
-  #   new = data.frame(x = trueDataset@x_pixel , y = trueDataset@y_pixel , inferred_cell_types = rep("Unassigned", NROW(cl))  )
-    
-  #   #new = data.frame(x = spatial[,1] , y = spatial[,2] , inferred_cell_types = rep("Unassigned", NROW(cl))  )
-  #   #print(new)
-  #   #new[,3] = mapvalues(new[,3], from = unique(new[,3]), to = sort(as.numeric(unique(new[,3]) ) ) )
-  #   #print(table(new[,3]))#
-  #   new[,3] = factor(new[,3], levels = c("Unassigned", sort(as.numeric(unique(cl) ))) )
-  #   print(new[,3])
-  #   vals$to_plot_zp <- new
-    
-  #   vals$select_cluster <- levels(vals$to_plot_zp[,3])
-  #   updateSelectInput(session, "cl_choice",
-  #                     choices = levels(vals$to_plot_zp[,3]), selected = "")
-  # })
-  
-  # observeEvent(input$plot_click, {
-  #   #new_x = input$plot_click$x
-  #   #new_y = input$plot_click$y
-  #   if(vals$start_hover == FALSE){
-  #     vals$start_hover = TRUE
-  #     #Reset queue
-  #     vals$jobQ = queue()
-  #     gc()
-  #   } else{
-  #     #Was hovering -> Now process jobQ in parallel
-  #     q = vals$jobQ
-  #     doneHash = hash()
-  #     cell_strs = rownames(vals$to_plot_zp)
-  #     for(i in 1:NROW(cell_strs )){
-  #       doneHash[[cell_strs[i]]]<-FALSE
-  #     }
-  #     jobList = as.list(q)
-      
-  #     for(i in 1:length(jobList)){
-  #       #Skip if cell already painted
-  #       curr_cell_names_V =  rownames(jobList[[i]])
-  #       #print(curr_cell_names_V)
-  #       for(j in 1:NROW(curr_cell_names_V)){
-  #         curr_cell_name = curr_cell_names_V[j]
-  #         done = doneHash[[curr_cell_name]]
-  #         if(done){
-  #           next
-  #         } else{
-  #           vals$to_plot_zp[!is.na(fmatch(rownames(vals$to_plot_zp), curr_cell_name )) , 3] = vals$select_cluster[cluster_index()+1]
-  #           doneHash[[curr_cell_name]] = TRUE
-  #         }
-  #       }
-  #     }
-  #     vals$start_hover = FALSE 
-  #   }
-  # })
-  
-  # observeEvent(input$plot_hover, {
-  #   #new_x = input$plot_click$x
-  #   #new_y = input$plot_click$y
-  #   if(vals$use_click == FALSE && vals$start_hover == TRUE){
-  #     selected = nearPoints(vals$to_plot_zp, input$plot_hover, xvar="x", yvar = "y", threshold = 10  )
-  #     #print(length(rownames(selected)) )
-  #     #print(NROW(selected[,3]) )
-  #     x_cord = selected$x[1]
-  #     #y_cord = selected$y[1]
-  #     if(!is.na(x_cord)){
-  #       pushback(vals$jobQ, selected)
-  #       #print(sprintf("%s , %s", x, y))
-  #       #print(vals$to_plot_zp[rownames(selected) == rownames(vals$to_plot_zp)  , 3])
-  #       #print(vals$select_cluster[cluster_index()])
-  #       #print(vals$to_plot_zp[rownames(selected) == rownames(vals$to_plot_zp)  , 3])
-  #       #print(vals$to_plot_zp[,1:2])
-  #       #print()
-  #       # print(!is.na(fmatch(rownames(vals$to_plot_zp), rownames(selected) )))
-  #       #vals$to_plot_zp[!is.na(fmatch(rownames(vals$to_plot_zp), rownames(selected) )) , 3] = vals$select_cluster[cluster_index()]
-  #       #select_rows = rownames(selected) == rownames(vals$to_plot_zp)
-  #       #vals$to_plot_zp[select_rows  , 3] = vals$select_cluster[cluster_index()]
-  #     }
-  #   }
-  # })
-  # observe({
-  #   shinyDirChoose(input, "save", roots=c(folder=getwd()), session=session)
-  #   vals$save_path <- parseSavePath(c(folder=getwd()), input$save)$datapath
-  #   #print(fileinfo$datapath)
-  # })
   
   # observeEvent(input$save_file,{
   #   #print(sprintf("%s.rds", vals$save_path))
