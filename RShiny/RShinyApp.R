@@ -5,6 +5,7 @@ library(shinyFiles)
 library(hash)
 library(RColorBrewer)
 library(stringr)
+library(ggplot2)
 
 # Use UI from front-end.R
 source(file.path(getwd(),"Rshiny", "frontend.R"))
@@ -23,13 +24,6 @@ server <- function(session, input, output) {
     #' Sets cluster_index as cluster selected by User
     input$cl_choice
   })
-
-  # observeEvent(input$cl_choice, {
-  #   #' Callback to load clusters from a file given by User
-  #   cl_path = input$cl_file$datapath
-  #   cls = readRDS(cl_path)
-  #   vals$cls = process_cl(cls)
-  # })
 
   observeEvent(input$cl_file, {
     #' Callback to load clusters from a file given by User
@@ -50,7 +44,11 @@ server <- function(session, input, output) {
     if(!is.null(vals$spatial_df)){
       spatial_info = vals$spatial_df
       data = data.frame(x=spatial_info$x, y=spatial_info$y, color=vals$cls)
-      fig = plot_ly(type="scatter",mode="markers",data = data, x = ~x, y = ~y, color = ~color, size=5)
+
+      plot = ggplot( data, aes(x= x, y = y, color=  color )) +  geom_point(size=5 ) + scale_y_reverse()
+      plot = plot +   theme_classic() + scale_color_manual(values = colorRampPalette(brewer.pal(8,"Set2"))(10) )
+      fig = ggplotly(plot, source="A")
+      #fig = plot_ly(type="scatter",mode="markers",data = data, x = ~x, y = ~y, color = ~color, size=5)
     } else{fig=NULL}
     return(fig)
   })
@@ -59,23 +57,31 @@ server <- function(session, input, output) {
       return(data())
   })
 
-  output$selected <- renderPrint({
-    vals$selected_pts = data.frame(event_data("plotly_selected"))
-    print(vals$selected_pts)
+  paint_pts = reactive({
+    if(input$paint_type == "click"){
+      return(event_data("plotly_click"))
+    } else{
+      return(event_data("plotly_selected"))
+    }
   })
+
+  observe({
+    vals$selected_pts = paint_pts()
+  })
+
+  # output$selected <- renderPrint({
+  #   vals$selected_pts = data.frame()
+  #   print(vals$selected_pts)
+  # })
 
   observeEvent(input$paint_selected, {
     selected_df = vals$selected_pts[,3:4]
     spatial_info = vals$spatial_df
     matched = match(
-      interaction(selected_df$x, selected_df$y),
+      interaction(selected_df$x, -1*selected_df$y),
       interaction(spatial_info$x, spatial_info$y)
     );
-    print(vals$cls)
-    
     vals$cls[matched] = cluster()
-    print(vals$cls)
-    print(cluster())
   })
 
   observeEvent(input$add_cl, {
@@ -97,7 +103,8 @@ server <- function(session, input, output) {
   # })
 
   observe({
-    shinyFileSave(input, "save_file", roots=c(folder=getwd()), session=session)
+    save_file = shinyFileSave(input, "save_file", roots=c(folder=getwd()), session=session)
+    print(save_file)
     vals$save_path <- parseSavePath(c(folder=getwd()), input$save_file)$datapath
     print(vals$save_file)
   })
