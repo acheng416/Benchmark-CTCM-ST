@@ -1,0 +1,10 @@
+.upload-text {
+  background-color: white;
+  color: black;
+}
+
+.upload {
+  padding: 5px;
+  border-radius: 10px;
+  border: 2px solid #4169e1;
+}
